@@ -1,0 +1,189 @@
+<?xml version="1.0"?>
+<robot name="hexapod" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ===================== -->
+  <!-- properties -->
+  <!-- ===================== -->
+  <xacro:property name="body_length" value="0.4"/>
+  <xacro:property name="body_width"  value="0.3"/>
+  <xacro:property name="body_height" value="0.05"/>
+
+  <xacro:property name="leg_length1" value="0.15"/>
+  <xacro:property name="leg_length2" value="0.15"/>
+  <xacro:property name="leg_radius"  value="0.02"/>
+
+  <xacro:property name="body_mass" value="2.0"/>
+  <xacro:property name="hip_mass"  value="0.05"/>
+  <xacro:property name="thigh_mass" value="0.2"/>
+  <xacro:property name="calf_mass"  value="0.15"/>
+
+  <!-- ===================== -->
+  <!-- materials -->
+  <!-- ===================== -->
+  <material name="gray">
+    <color rgba="0.6 0.6 0.6 1.0"/>
+  </material>
+
+  <material name="blue">
+    <color rgba="0.2 0.4 0.9 1.0"/>
+  </material>
+
+  <material name="orange">
+    <color rgba="0.9 0.5 0.1 1.0"/>
+  </material>
+
+  <!-- ===================== -->
+  <!-- BODY -->
+  <!-- ===================== -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="${body_length} ${body_width} ${body_height}"/>
+      </geometry>
+      <material name="gray"/>
+    </visual>
+
+    <collision>
+      <geometry>
+        <box size="${body_length} ${body_width} ${body_height}"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0 0 0"/>
+      <mass value="${body_mass}"/>
+      <inertia
+        ixx="0.02" ixy="0.0" ixz="0.0"
+        iyy="0.03" iyz="0.0"
+        izz="0.04"/>
+    </inertial>
+  </link>
+
+  <!-- ===================== -->
+  <!-- LEG MACRO -->
+  <!-- params:
+       name  : leg name
+       x y   : mounting position
+  -->
+  <!-- ===================== -->
+  <xacro:macro name="leg" params="name x y">
+
+    <!-- hip link -->
+    <link name="${name}_hip">
+      <visual>
+        <geometry>
+          <sphere radius="0.02"/>
+        </geometry>
+        <material name="blue"/>
+      </visual>
+
+      <collision>
+        <geometry>
+          <sphere radius="0.02"/>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <origin xyz="0 0 0"/>
+        <mass value="${hip_mass}"/>
+        <inertia
+          ixx="0.0001" ixy="0.0" ixz="0.0"
+          iyy="0.0001" iyz="0.0"
+          izz="0.0001"/>
+      </inertial>
+    </link>
+
+    <joint name="${name}_hip_yaw" type="revolute">
+      <parent link="base_link"/>
+      <child link="${name}_hip"/>
+      <origin xyz="${x} ${y} -${body_height/2}" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit effort="10" velocity="10" lower="-1.57" upper="1.57"/>
+      <dynamics damping="0.1" friction="0.05"/>
+    </joint>
+
+    <!-- thigh -->
+    <link name="${name}_thigh">
+      <visual>
+        <origin xyz="0 0 -${leg_length1/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius}" length="${leg_length1}"/>
+        </geometry>
+        <material name="orange"/>
+      </visual>
+
+      <collision>
+        <origin xyz="0 0 -${leg_length1/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius}" length="${leg_length1}"/>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <origin xyz="0 0 -${leg_length1/2}"/>
+        <mass value="${thigh_mass}"/>
+        <inertia
+          ixx="0.001" ixy="0.0" ixz="0.0"
+          iyy="0.001" iyz="0.0"
+          izz="0.0002"/>
+      </inertial>
+    </link>
+
+    <joint name="${name}_hip_pitch" type="revolute">
+      <parent link="${name}_hip"/>
+      <child link="${name}_thigh"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <limit effort="10" velocity="10" lower="-1.2" upper="1.2"/>
+      <dynamics damping="0.1" friction="0.05"/>
+    </joint>
+
+    <!-- calf -->
+    <link name="${name}_calf">
+      <visual>
+        <origin xyz="0 0 -${leg_length2/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius*0.9}" length="${leg_length2}"/>
+        </geometry>
+        <material name="blue"/>
+      </visual>
+
+      <collision>
+        <origin xyz="0 0 -${leg_length2/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius*0.9}" length="${leg_length2}"/>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <origin xyz="0 0 -${leg_length2/2}"/>
+        <mass value="${calf_mass}"/>
+        <inertia
+          ixx="0.0008" ixy="0.0" ixz="0.0"
+          iyy="0.0008" iyz="0.0"
+          izz="0.00015"/>
+      </inertial>
+    </link>
+
+    <joint name="${name}_knee" type="revolute">
+      <parent link="${name}_thigh"/>
+      <child link="${name}_calf"/>
+      <origin xyz="0 0 -${leg_length1}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <limit effort="10" velocity="10" lower="-2.0" upper="0.0"/>
+      <dynamics damping="0.1" friction="0.05"/>
+    </joint>
+
+  </xacro:macro>
+
+  <!-- ===================== -->
+  <!-- 6 LEGS -->
+  <!-- ===================== -->
+  <xacro:leg name="leg1" x="0.15"  y="0.15"/>
+  <xacro:leg name="leg2" x="0.15"  y="-0.15"/>
+  <xacro:leg name="leg3" x="0.0"   y="0.18"/>
+  <xacro:leg name="leg4" x="0.0"   y="-0.18"/>
+  <xacro:leg name="leg5" x="-0.15" y="0.15"/>
+  <xacro:leg name="leg6" x="-0.15" y="-0.15"/>
+
+</robot>
